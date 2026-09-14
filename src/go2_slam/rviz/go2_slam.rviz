@@ -1,0 +1,106 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Tree Height: 700
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 40
+      Color: 80; 80; 80
+      Reference Frame: camera_init
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Ban do (cloud_registered)
+      Enabled: true
+      Topic:
+        Value: /cloud_registered
+        Depth: 5
+        # BEST EFFORT bắt buộc: FAST-LIO publish dữ liệu tần suất cao. Để
+        # Reliable thì rviz KHÔNG nhận được gì và cũng không báo lỗi rõ ràng.
+        Reliability Policy: Best Effort
+        History Policy: Keep Last
+        Durability Policy: Volatile
+      Style: Points
+      Size (Pixels): 2
+      Alpha: 1
+      Decay Time: 300
+      # Decay Time = số giây rviz GIỮ LẠI điểm cũ.
+      # 0 = chỉ hiện scan mới nhất -> không thấy bản đồ dựng dần.
+      # 300 = tích luỹ 5 phút ở phía rviz.
+      # KHÔNG bật publish.map_en của FAST-LIO để làm việc này: hàm publish_map()
+      # cộng dồn vào pcl_wait_pub mà không bao giờ xoá, rồi publish TOÀN BỘ mỗi
+      # giây -> sau 5 phút là message 230 MB/giây.
+      Color Transformer: AxisColor
+      Axis: Z
+      Autocompute Intensity Bounds: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Scan hien tai (body)
+      Enabled: true
+      Topic:
+        Value: /cloud_registered_body
+        Depth: 5
+        Reliability Policy: Best Effort
+        History Policy: Keep Last
+        Durability Policy: Volatile
+      Style: Points
+      Size (Pixels): 3
+      Color: 255; 170; 0
+      Color Transformer: FlatColor
+      Decay Time: 0
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /Odometry
+        Depth: 20
+        Reliability Policy: Best Effort
+      Keep: 1
+      Shape:
+        Value: Axes
+        Axes Length: 0.5
+        Axes Radius: 0.05
+      Covariance:
+        Value: false
+    - Class: rviz_default_plugins/Path
+      Name: Quy dao
+      Enabled: true
+      Topic:
+        Value: /path
+        Depth: 5
+        Reliability Policy: Best Effort
+      Color: 0; 255; 127
+      Line Width: 0.03
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Show Names: true
+      Show Axes: true
+      Show Arrows: false
+      Marker Scale: 0.4
+      Frame Timeout: 15
+  Global Options:
+    # camera_init = khung thế giới của FAST-LIO, đặt tại vị trí khởi động
+    Fixed Frame: camera_init
+    Background Color: 25; 25; 30
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Distance: 25
+      Focal Point: {X: 0, Y: 0, Z: 0}
+      Pitch: 0.6
+      Yaw: 2.4
+      Target Frame: camera_init
+    Saved: ~
+Window Geometry:
+  Height: 1000
+  Width: 1600

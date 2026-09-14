@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>go2_slam</name>
+  <version>0.1.0</version>
+  <description>
+    LiDAR-Inertial SLAM cho Unitree Go2 dùng Ouster OS1-32 Rev7 + FAST-LIO2.
+    Package này chỉ chứa cấu hình và launch — thuật toán nằm ở fast_lio,
+    driver nằm ở ouster_ros.
+  </description>
+  <maintainer email="trinhkienvankg@gmail.com">kennyflw</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>ouster_ros</exec_depend>
+  <exec_depend>fast_lio</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>pointcloud_to_laserscan</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <export><build_type>ament_cmake</build_type></export>
+</package>

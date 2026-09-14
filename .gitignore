@@ -1,0 +1,27 @@
+# ==========================================================================
+#  go2_slam_ws
+# ==========================================================================
+
+# --- Sản phẩm build của colcon (sinh lại được bằng colcon build) ---
+build/
+install/
+log/
+
+# --- Dữ liệu chạy (hàng GB, không commit) ---
+bags/
+maps/
+*.pcd
+*.db3
+
+# --- Repo của người khác (kéo về bằng scripts/fetch_src.sh) ---
+src/FAST_LIO/
+src/ouster-ros/
+
+# --- Metadata sensor sinh ra lúc chạy ---
+*-metadata.json
+
+# --- Linh tinh ---
+*.swp
+*~
+.vscode/
+__pycache__/

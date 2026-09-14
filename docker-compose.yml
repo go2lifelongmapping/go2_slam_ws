@@ -1,0 +1,40 @@
+services:
+  slam:
+    build:
+      context: ./docker          # nơi chứa Dockerfile và entrypoint.sh
+      dockerfile: Dockerfile
+      args:
+        UID: "1000"              # khớp id -u của bạn
+        GID: "1000"
+    image: go2_slam:foxy
+    container_name: go2_slam
+    hostname: go2slam
+
+    network_mode: host
+
+    # Dùng chung IPC với host để DDS truyền qua shared memory (nhanh hơn UDP
+    # loopback rất nhiều khi point cloud 10 Hz chạy giữa các node).
+    ipc: host
+
+    # Cần cho tcpdump/ethtool khi lidar cắm rồi mà không thấy dữ liệu.
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1       # tránh lỗi shared-memory của Qt qua X11
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - ROS_DOMAIN_ID=0
+      - ROS_LOCALHOST_ONLY=0     # phải là 0 thì mới thấy được Go2 trên mạng
+
+    volumes:
+      - .:/ws                          # workspace: sửa ở Ubuntu 22, build ở Foxy
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw   # socket X11 để chạy rviz2
+
+    devices:
+      - /dev/dri:/dev/dri        # iGPU AMD cho rviz2
+
+    stdin_open: true
+    tty: true
+    command: sleep infinity

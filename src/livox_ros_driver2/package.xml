@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>livox_ros_driver2</name>
+  <version>1.0.0</version>
+  <description>
+    STUB — chỉ có định nghĩa message của Livox, không có driver.
+
+    Vì sao cần: FAST_LIO (nhánh ROS2) khai báo livox_ros_driver2 là dependency
+    BẮT BUỘC ở CMakeLists.txt dòng 62, kể cả khi dùng lidar Ouster.
+    Hai file src/preprocess.h:5 và src/laserMapping.cpp:62 có dòng:
+        #include &lt;livox_ros_driver2/msg/custom_msg.hpp&gt;
+
+    Code Livox bên trong FAST_LIO không bao giờ chạy: laserMapping.cpp:921
+    rẽ nhánh theo lidar_type, và ta đặt lidar_type=3 (OUST64).
+
+    Nếu sau này dùng lidar Livox thật, thay package này bằng driver thật là xong.
+  </description>
+  <maintainer email="trinhkienvankg@gmail.com">kennyflw</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <depend>std_msgs</depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

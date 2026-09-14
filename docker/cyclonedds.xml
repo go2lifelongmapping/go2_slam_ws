@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  CycloneDDS cho ROS 2 Foxy (Cyclone 0.7.0).
+
+  === CẢNH BÁO PHIÊN BẢN ===
+  Foxy dùng Cyclone 0.7, schema là:
+      <General><NetworkInterfaceAddress>eno1</NetworkInterfaceAddress>
+  Từ Humble (Cyclone 0.9+) mới đổi sang:
+      <General><Interfaces><NetworkInterface name="eno1"/></Interfaces>
+  Chép nhầm dạng Humble vào đây: Cyclone 0.7 BỎ QUA IM LẶNG, không báo lỗi,
+  và bạn lại quay về tình trạng "selected arbitrarily".
+
+  === VÌ SAO CẦN FILE NÀY ===
+  Không có nó, log in ra:
+      using network interface eno1 selected arbitrarily from: eno1, wlp3s0, docker0
+  "arbitrarily" = lần chạy sau có thể chọn wlp3s0 hoặc docker0. Khi đó node
+  vẫn chạy, topic vẫn hiện trong `ros2 topic list`, nhưng dữ liệu không tới nơi.
+-->
+<CycloneDDS xmlns="https://cdds.io/config">
+  <Domain id="any">
+
+    <General>
+      <!-- Card mạng nối với lidar Ouster (192.168.123.40) và Go2.
+           Đổi thành tên card khác nếu bạn cắm chỗ khác. -->
+      <NetworkInterfaceAddress>eno1</NetworkInterfaceAddress>
+
+      <AllowMulticast>default</AllowMulticast>
+
+      <!-- PointCloud2 của OS1-32 @1024x10 là 32768 x 48 = 1.5 MB mỗi message.
+           Cyclone phải cắt nhỏ để gửi; hai giá trị này quyết định cắt thế nào. -->
+      <MaxMessageSize>65500B</MaxMessageSize>
+      <FragmentSize>4000B</FragmentSize>
+    </General>
+
+    <Internal>
+      <!-- Bộ đệm nhận của socket DDS. Phải nhỏ hơn hoặc bằng
+           net.core.rmem_max của host (ta đã đặt 26214400 = 25 MB).
+           Mặc định của Cyclone chỉ 1 MB -> không chứa nổi một message 1.5 MB. -->
+      <MinimumSocketReceiveBufferSize>16MB</MinimumSocketReceiveBufferSize>
+
+      <!-- Hàng đợi ghi. Nới ra để publisher không chặn khi subscriber chậm. -->
+      <Watermarks>
+        <WhcHigh>4MB</WhcHigh>
+      </Watermarks>
+    </Internal>
+
+    <Discovery>
+      <!-- Lidar và laptop cùng subnet 192.168.123.x nên multicast là đủ.
+           Nếu sau này nối Go2 qua mạng chặn multicast, bỏ comment khối Peers. -->
+      <!--
+      <Peers>
+        <Peer address="192.168.123.18"/>
+        <Peer address="192.168.123.161"/>
+      </Peers>
+      -->
+    </Discovery>
+
+    <Tracing>
+      <Verbosity>warning</Verbosity>
+      <OutputFile>stderr</OutputFile>
+    </Tracing>
+
+  </Domain>
+</CycloneDDS>

@@ -1,0 +1,122 @@
+# ============================================================================
+#  FAST-LIO2  —  Ouster OS-1-32-U2-SR (Rev7, FW 3.1.0, SN 122544004472)
+#  trên Unitree Go2
+# ----------------------------------------------------------------------------
+#  Chép từ config/ouster64.yaml của FAST_LIO rồi sửa cho:
+#    * 32 tia thay vì 64
+#    * tên topic của driver ouster_ros đời mới (namespace /ouster)
+#    * extrinsic đọc từ metadata THẬT của máy này
+#    * môi trường trong nhà + robot 4 chân
+#
+#  Node FAST-LIO không có tên cố định nên dùng wildcard '/**'.
+# ============================================================================
+/**:
+    ros__parameters:
+
+        # false = khớp trực tiếp điểm thô vào bản đồ. ĐÂY LÀ CHẾ ĐỘ FAST-LIO2.
+        # true  = quay về trích xuất đặc trưng kiểu LOAM (FAST-LIO v1).
+        # Với 32 tia, mật độ dọc quá thưa nên đặc trưng cạnh rất nhiễu -> để false.
+        feature_extract_enable: false
+
+        # Lấy 1 điểm mỗi N điểm. OS1-32 @1024x10 cho 32768 điểm/scan.
+        # N=3 (mặc định của bản 64 tia) còn ~11k điểm — hơi thưa cho máy 32 tia.
+        # N=2 -> ~16k điểm/scan, CPU 16 nhân chạy thoải mái.
+        point_filter_num: 2
+
+        max_iteration: 3
+
+        # Voxel downsample. Mặc định 0.5 m là cho ngoài trời/xe hơi; trong nhà
+        # sẽ mất chi tiết cửa, chân bàn, bậc thềm.
+        filter_size_surf: 0.25
+        filter_size_map:  0.30
+
+        # Cạnh khối bản đồ cục bộ (m). 1000 m thừa cho trong nhà và tốn RAM.
+        cube_side_length: 500.0
+
+        runtime_pos_log_enable: false
+        map_file_path: "./test.pcd"
+
+        common:
+            # QUAN TRỌNG: driver ouster_ros >= 0.9 publish trong namespace /ouster.
+            # Config gốc của FAST_LIO ghi /os_cloud_node/points là tên từ driver
+            # đời 2021 — để nguyên thì node chạy nhưng không nhận được gì.
+            lid_topic:  "/ouster/points"
+            imu_topic:  "/ouster/imu"
+
+            # false vì LiDAR và IMU nằm CÙNG một con Ouster, chung một đồng hồ,
+            # đã đồng bộ phần cứng. Chỉ bật true khi ghép IMU rời (vd IMU của Go2).
+            time_sync_en: false
+            time_offset_lidar_to_imu: 0.0
+
+        preprocess:
+            lidar_type: 3          # 1=Livox, 2=Velodyne, 3=Ouster
+            scan_line: 32          # số tia THẬT, đọc từ beam_altitude_angles
+
+            # Trường 't' của ouster_ros là uint32 NANOGIÂY từ đầu scan.
+            # 0=giây, 1=mili, 2=micro, 3=nano
+            timestamp_unit: 3
+
+            # Bán kính mù (m). Lidar gắn trên lưng Go2 nên thân và chân chó nằm
+            # trong tầm 0.2-0.5 m. Không cắt thì FAST-LIO coi thân chó là vật thể
+            # tĩnh và bản đồ bị "kéo" theo robot.
+            # Giảm xuống 0.5 nếu cần thấy vật rất gần và lidar gắn cao.
+            blind: 1.0
+
+        mapping:
+            # Nhiễu IMU. Ouster dùng ICM-20948 — MEMS phổ thông, nhiễu khá cao.
+            # GIỮ giá trị lớn này; chép giá trị nhỏ của IMU công nghiệp vào sẽ
+            # khiến bộ lọc quá tin IMU và trôi.
+            acc_cov: 0.1
+            gyr_cov: 0.1
+            b_acc_cov: 0.0001
+            b_gyr_cov: 0.0001
+
+            fov_degree: 360.0
+
+            # Tầm hiệu dụng (m). Máy này là bản SR (Short Range) nên tầm ngắn
+            # hơn OS1 tiêu chuẩn. Đặt 100 là cận trên an toàn — giá trị này chỉ
+            # dùng để giới hạn khối bản đồ cục bộ, đặt thừa thì tốn RAM chứ
+            # không sai; đặt thiếu thì cắt mất điểm hợp lệ.
+            det_range: 100.0
+
+            # false = tin extrinsic bên dưới.
+            # true  = ước lượng online; chỉ bật khi KHÔNG biết extrinsic. Với
+            # Ouster (LiDAR+IMU cùng vỏ, hiệu chuẩn nhà máy) bật lên chỉ thêm
+            # biến trạng thái và dễ phân kỳ.
+            extrinsic_est_en: false
+
+            # ================================================================
+            #  Đọc từ metadata của CHÍNH máy này (SN 122544004472, FW 3.1.0)
+            #  Sinh bằng: python3 scripts/ouster_extrinsic.py 192.168.123-metadata.json
+            #
+            #  Ý nghĩa: p_imu = extrinsic_R * p_lidar + extrinsic_T
+            #  R = diag(-1,-1,1) tức os_lidar xoay 180 độ quanh Z so với os_imu
+            #      — đặc điểm chung của mọi Ouster.
+            #  |T| = 32.26 mm
+            #
+            #  KHÔNG chép sang máy Ouster khác: mỗi máy lệch nhau vài mm.
+            # ================================================================
+            extrinsic_T: [ 0.00244100, 0.00972500, 0.03066200 ]
+            extrinsic_R: [ -1.0,  0.0,  0.0,
+                            0.0, -1.0,  0.0,
+                            0.0,  0.0,  1.0 ]
+
+        publish:
+            # KHÔNG đặt map_en: true.
+            # publish_map() ở laserMapping.cpp:593 cộng dồn vào pcl_wait_pub mà
+            # KHÔNG BAO GIỜ xoá, rồi publish toàn bộ mỗi giây (timer 1000 ms ở
+            # dòng 942). Sau 5 phút là message ~230 MB mỗi giây -> hết RAM, nghẽn DDS.
+            # Muốn xem bản đồ tích luỹ: dùng Decay Time của rviz trên
+            # /cloud_registered (đã đặt 300 giây trong go2_slam.rviz).
+            # Muốn lưu bản đồ đầy đủ: pcd_save_en bên dưới, ghi ra file khi Ctrl-C.
+
+            path_en: true              # /path để xem quỹ đạo trong rviz
+            scan_publish_en: true      # /cloud_registered (bản đồ toàn cục)
+            dense_publish_en: true     # false nếu rviz nghẽn
+            scan_bodyframe_pub_en: true # /cloud_registered_body
+
+        pcd_save:
+            # Lưu bản đồ .pcd khi tắt node bằng Ctrl-C.
+            # File nằm ở src/FAST_LIO/PCD/scans.pcd
+            pcd_save_en: true
+            interval: -1               # -1 = gộp tất cả vào MỘT file

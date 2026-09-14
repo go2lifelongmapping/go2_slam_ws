@@ -1,0 +1,41 @@
+# ============================================================================
+#  QoS override cho `ros2 bag record`
+# ----------------------------------------------------------------------------
+#  VÌ SAO CẦN FILE NÀY
+#  rosbag2 mặc định subscribe ở RELIABLE. Driver ouster_ros publish ở
+#  BEST_EFFORT (SensorDataQoS). Hai bên không tương thích -> rosbag2 KHÔNG nhận
+#  được message nào và ghi ra bag RỖNG, mà không báo lỗi rõ ràng.
+#
+#  Đây chính là vấn đề mà tham số `use_system_default_qos` của driver nhắc tới
+#  (xem ros2/rosbag2 issue #125). Có 2 cách xử lý:
+#    (a) chạy driver với use_system_default_qos:=true  -> đổi QoS toàn hệ thống
+#    (b) dùng file override này                        -> chỉ đổi phía rosbag2
+#  Cách (b) tốt hơn: giữ nguyên BEST_EFFORT cho FAST-LIO (đúng cho dữ liệu tần
+#  suất cao) và chỉ nói riêng với rosbag2 rằng hãy subscribe best_effort.
+#
+#  CÁCH DÙNG
+#    ros2 bag record --qos-profile-overrides-path /ws/config/rosbag_qos.yaml \
+#        /ouster/points /ouster/imu /ouster/metadata /tf_static -o /ws/bags/<ten>
+# ============================================================================
+
+/ouster/points:
+  history: keep_last
+  depth: 10
+  reliability: best_effort
+  durability: volatile
+
+/ouster/imu:
+  # depth lớn hơn vì IMU chạy 100 Hz, gấp 10 lần lidar
+  history: keep_last
+  depth: 200
+  reliability: best_effort
+  durability: volatile
+
+/ouster/metadata:
+  # Driver publish metadata MỘT LẦN lúc khởi động với durability transient_local
+  # ("latched"). Phải khai đúng transient_local, nếu không rosbag2 vào sau sẽ
+  # bỏ lỡ và lúc phát lại driver replay không biết cấu hình sensor.
+  history: keep_last
+  depth: 1
+  reliability: reliable
+  durability: transient_local
