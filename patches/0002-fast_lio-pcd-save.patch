@@ -1,0 +1,22 @@
+--- a/src/laserMapping.cpp
++++ b/src/laserMapping.cpp
+@@ -513,7 +513,9 @@
+     /**************** save map ****************/
+     /* 1. make sure you have enough memories
+     /* 2. noted that pcd save will influence the real-time performences **/
+-    /*
++    // [patch 0002] Upstream comment cả khối này lại, nên pcl_wait_save không
++    // bao giờ được đổ dữ liệu vào -> pcd_save_en:true im lặng không lưu gì,
++    // và khối lưu ở cuối main() luôn thấy size()==0 rồi bỏ qua.
+     if (pcd_save_en)
+     {
+         int size = feats_undistort->points.size();
+@@ -540,7 +542,7 @@
+             scan_wait_num = 0;
+         }
+     }
+-    */
++    // [patch 0002] hết khối được bỏ comment
+ }
+ 
+ void publish_frame_body(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLaserCloudFull_body)

@@ -25,3 +25,6 @@ src/ouster-ros/
 *~
 .vscode/
 __pycache__/
+
+# --- Sinh ra lúc chạy bởi run.sh ---
+docker/cyclonedds.gen.xml

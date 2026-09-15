@@ -12,6 +12,10 @@ services:
 
     network_mode: host
 
+    # PID 1 biết thu dọn tiến trình mồ côi. Thiếu dòng này thì PID 1 là
+    # `sleep infinity` (không reap) và mỗi lần Ctrl-C lại tích thêm zombie.
+    init: true
+
     # Dùng chung IPC với host để DDS truyền qua shared memory (nhanh hơn UDP
     # loopback rất nhiều khi point cloud 10 Hz chạy giữa các node).
     ipc: host

@@ -59,3 +59,25 @@ Triệu chứng: spam log `Failed to find match for field 'ring'.` mỗi scan.
 
 Với `feature_extract_enable: false` (chế độ FAST-LIO2) thì `ring` không được
 dùng nên không sai kết quả — nhưng sẽ sai ngay nếu bật trích xuất đặc trưng.
+
+## 0002-fast_lio-pcd-save.patch
+
+Bỏ comment khối tích luỹ điểm trong `publish_frame_world()`
+(`laserMapping.cpp` ~dòng 516).
+
+Upstream comment cả khối lại, nên `pcl_wait_save` không bao giờ được đổ dữ liệu
+vào. Hệ quả: đặt `pcd_save_en: true` trong config KHÔNG có tác dụng — khối lưu
+ở cuối `main()` kiểm tra `pcl_wait_save->size() > 0`, luôn thấy 0, rồi thoát
+im lặng. Không lỗi, không cảnh báo, không file.
+
+Service `map_save` cũng không thay thế được: nó ghi `pcl_wait_pub` (buffer của
+`publish_map()`, mà ta tắt bằng `map_en: false` vì nó ngốn RAM) ra đường dẫn
+tương đối `./test.pcd`.
+
+Sau khi áp patch, Ctrl-C node sẽ ghi `src/FAST_LIO/PCD/scans.pcd`.
+Đã kiểm chứng: bag 57 giây -> 8 494 164 điểm, 271 MB.
+
+LƯU Ý BỘ NHỚ: bản đồ tích luỹ trong RAM tới lúc tắt node, khoảng **4.8 MB mỗi
+giây**. Chạy 5 phút là ~1.4 GB. Với Jetson của Go2, đặt `pcd_save.interval`
+(số scan) khác -1 để nó xả định kỳ ra `scans_1.pcd`, `scans_2.pcd`, ...
+thay vì giữ tất cả trong bộ nhớ.

@@ -1,0 +1,53 @@
+# ============================================================================
+#  Cấu hình cho Unitree Go2 (Jetson, arm64, KHÔNG màn hình).
+#
+#  Đây là file ĐỘC LẬP, không phải override. Lý do: docker compose GỘP các
+#  danh sách (volumes, devices) giữa các file -f thay vì thay thế, nên không
+#  có cách nào dùng override để GỠ BỎ /dev/dri hay socket X11.
+#
+#  run.sh tự chọn file này khi thấy máy là aarch64. Ép tay:
+#      COMPOSE_FILE=docker-compose.go2.yml ./run.sh ...
+# ============================================================================
+services:
+  slam:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+      args:
+        UID: "${HOST_UID:-1000}"     # user trên Go2 có thể không phải uid 1000
+        GID: "${HOST_GID:-1000}"
+    image: go2_slam:foxy
+    container_name: go2_slam
+    hostname: go2slam
+
+    network_mode: host
+    ipc: host
+
+    # PID 1 biết thu dọn tiến trình mồ côi. Không có dòng này thì PID 1 là
+    # `sleep infinity`, không reap, và mỗi lần Ctrl-C một launch lại tích thêm
+    # vài tiến trình zombie (đã đếm được 24 cái trong một phiên trên laptop).
+    init: true
+
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    environment:
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      # MẶC ĐỊNH 42, KHÔNG phải 0. Domain 0 trên chính robot nghĩa là chung
+      # domain DDS với toàn bộ node ROS 2 của Unitree: chúng sẽ thấy
+      # /ouster/points (725 KB x 10 Hz) và ngược lại. Đổi về 0 khi bạn thực sự
+      # muốn nói chuyện với node của Go2.
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+      - ROS_LOCALHOST_ONLY=0
+
+    volumes:
+      - .:/ws
+      # KHÔNG mount /tmp/.X11-unix: robot không có X server.
+
+    # KHÔNG khai báo /dev/dri: Jetson không có thiết bị đó và container sẽ
+    # không khởi động được ("error gathering device information").
+
+    stdin_open: true
+    tty: true
+    command: sleep infinity

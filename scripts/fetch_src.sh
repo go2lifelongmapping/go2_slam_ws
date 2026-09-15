@@ -38,16 +38,20 @@ clone_or_update https://github.com/hku-mars/FAST_LIO.git ROS2 FAST_LIO
 
 # --- 3. Áp patch cho FAST_LIO ------------------------------------------------
 # 3 sửa đổi bắt buộc để chạy trên Foxy với Ouster. Xem patches/README.md.
-PATCH="$WS/patches/0001-fast_lio-foxy-ouster.patch"
-if git -C "$SRC/FAST_LIO" apply --check "$PATCH" 2>/dev/null; then
-    git -C "$SRC/FAST_LIO" apply "$PATCH"
-    echo ">>> Đã áp patch FAST_LIO"
-elif git -C "$SRC/FAST_LIO" apply --reverse --check "$PATCH" 2>/dev/null; then
-    echo ">>> Patch FAST_LIO đã được áp từ trước, bỏ qua"
-else
-    echo ">>> CẢNH BÁO: không áp được patch. Upstream có thể đã đổi." >&2
-    echo "    Xem patches/README.md để sửa tay 3 chỗ." >&2
-fi
+# Áp TẤT CẢ patch trong patches/ theo thứ tự tên, không chỉ 0001.
+for PATCH in "$WS"/patches/*.patch; do
+    [ -e "$PATCH" ] || continue
+    NAME="$(basename "$PATCH")"
+    if git -C "$SRC/FAST_LIO" apply --check "$PATCH" 2>/dev/null; then
+        git -C "$SRC/FAST_LIO" apply "$PATCH"
+        echo ">>> Đã áp $NAME"
+    elif git -C "$SRC/FAST_LIO" apply --reverse --check "$PATCH" 2>/dev/null; then
+        echo ">>> $NAME đã được áp từ trước, bỏ qua"
+    else
+        echo ">>> CẢNH BÁO: không áp được $NAME. Upstream có thể đã đổi." >&2
+        echo "    Xem patches/README.md để sửa tay." >&2
+    fi
+done
 
 echo
 echo ">>> Xong. Nội dung src/:"
