@@ -29,7 +29,10 @@ services:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1       # tránh lỗi shared-memory của Qt qua X11
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - ROS_DOMAIN_ID=0
+      # Cùng biến và cùng mặc định với docker-compose.go2.yml, để laptop và
+      # robot tự động ở chung domain và rviz trên laptop thấy được topic của
+      # Go2. Tên biến KHÔNG phải ROS_DOMAIN_ID — xem lý do ở file go2.
+      - ROS_DOMAIN_ID=${GO2_SLAM_DOMAIN_ID:-42}
       - ROS_LOCALHOST_ONLY=0     # phải là 0 thì mới thấy được Go2 trên mạng
 
     volumes:
