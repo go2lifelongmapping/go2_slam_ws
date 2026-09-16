@@ -104,9 +104,13 @@ def main():
     log.info(f'sau voxel {args.voxel} m: {len(xyz):,} điểm')
 
     if len(xyz) > args.max_points:
+        before = len(xyz)
         step = int(np.ceil(len(xyz) / args.max_points))
         xyz, inten = xyz[::step], (inten[::step] if inten is not None else None)
-        log.info(f'tỉa thêm 1/{step}: còn {len(xyz):,} điểm')
+        # Tỉa đều PHÁ VỠ tính đồng đều không gian mà voxel vừa tạo ra: bản đồ
+        # thành lỗ chỗ và nhìn tệ hơn cả khi dùng voxel thô hơn. Cảnh báo rõ.
+        log.warn(f'tỉa thêm 1/{step}: còn {len(xyz):,} điểm — bản đồ sẽ LỖ CHỖ. '
+                 f'Muốn giữ nguyên độ mịn, chạy lại với --max-points {before}')
 
     if inten is not None:
         data = np.empty((len(xyz), 4), dtype=np.float32)

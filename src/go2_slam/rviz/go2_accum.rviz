@@ -1,10 +1,17 @@
 # ============================================================================
-#  rviz xem BAN DO DAY DU tu file scans.pcd (khong mat diem theo thoi gian).
+#  rviz TICH LUY bang Decay Time — diem khong het han trong lan chay.
 #
-#  Dung voi: python3 scripts/pcd_view.py
-#  Node do doc PCD, gop voxel, roi phat MOT message latched len /map_pcd.
-#  Khac han cach dung Decay Time: khong co diem nao het han, vi chi co dung
-#  mot message va no o lai mai.
+#  Decay Time 99999 giay = thuc te khong bao gio het han.
+#
+#  CAI GIA phai tra, do duoc tren bag khu D:
+#    - rviz giu MOI message nhan duoc, khong khu trung lap. 3695 scan x
+#      ~15.000 diem = ~55 TRIEU diem, trong khi ban do that chi can 3,76
+#      trieu (93% la diem trung cho).
+#    - Moi khung hinh phai duyet so sach het han cua tung message.
+#    - Chi co nhung gi rviz nghe duoc: mo rviz muon la mat phan dau vinh vien.
+#
+#  Neu rviz dung hinh hoac thoat giua chung, do la ly do. Luc do dung
+#  go2_map.rviz + scripts/pcd_view.py thay the.
 # ============================================================================
 Panels:
   - Class: rviz_common/Displays
@@ -21,28 +28,30 @@ Visualization Manager:
       Color: 80; 80; 80
       Reference Frame: camera_init
     - Class: rviz_default_plugins/PointCloud2
-      Name: Ban do day du (map_pcd)
+      Name: Ban do (cloud_registered)
       Enabled: true
       Topic:
-        Value: /map_pcd
-        Depth: 1
-        # RELIABLE + TRANSIENT_LOCAL de rviz mo sau van nhan duoc ban do
-        # da phat truoc do. Sai mot trong hai la khong thay gi.
-        Reliability Policy: Reliable
+        Value: /cloud_registered
+        Depth: 5
+        # BEST EFFORT bắt buộc: FAST-LIO publish dữ liệu tần suất cao. Để
+        # Reliable thì rviz KHÔNG nhận được gì và cũng không báo lỗi rõ ràng.
+        Reliability Policy: Best Effort
         History Policy: Keep Last
-        Durability Policy: Transient Local
+        Durability Policy: Volatile
       Style: Points
-      # 2 px thay vi 1: o mat do 3,7 trieu diem trai rong ca khu D, diem 1 px
-      # nhin rat nhat.
       Size (Pixels): 2
       Alpha: 1
-      # Decay Time 0 = chi giu message moi nhat. Voi mot message latched chua
-      # TOAN BO ban do thi dung 0 la dung: khong co gi de het han.
-      Decay Time: 0
-      # Intensity thay vi AxisColor: trong nha Z gan nhu phang nen to mau theo
-      # truc Z ra mau bet. Cuong do phan xa cho thay ro tuong, cua, san.
-      Color Transformer: Intensity
-      Channel Name: intensity
+      Decay Time: 99999
+      # Ha tu 300 xuong 60: o 300 giay, 10 Hz x ~26k diem = ~15 trieu diem
+      # giu trong RAM va ve lai moi khung hinh. rviz2 thoat giua chung vi qua tai.
+      # Decay Time = số giây rviz GIỮ LẠI điểm cũ.
+      # 0 = chỉ hiện scan mới nhất -> không thấy bản đồ dựng dần.
+      # 300 = tích luỹ 5 phút ở phía rviz.
+      # KHÔNG bật publish.map_en của FAST-LIO để làm việc này: hàm publish_map()
+      # cộng dồn vào pcl_wait_pub mà không bao giờ xoá, rồi publish TOÀN BỘ mỗi
+      # giây -> sau 5 phút là message 230 MB/giây.
+      Color Transformer: AxisColor
+      Axis: Z
       Autocompute Intensity Bounds: true
     - Class: rviz_default_plugins/PointCloud2
       Name: Scan hien tai (body)
