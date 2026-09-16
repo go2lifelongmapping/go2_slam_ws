@@ -34,11 +34,21 @@ services:
 
     environment:
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      # MẶC ĐỊNH 42, KHÔNG phải 0. Domain 0 trên chính robot nghĩa là chung
-      # domain DDS với toàn bộ node ROS 2 của Unitree: chúng sẽ thấy
-      # /ouster/points (725 KB x 10 Hz) và ngược lại. Đổi về 0 khi bạn thực sự
-      # muốn nói chuyện với node của Go2.
-      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+      # BẮT BUỘC khác 0, và KHÔNG được đặt tên biến là ROS_DOMAIN_ID:
+      # ~/.bashrc của Go2 (dòng 149, thiết lập sẵn của Unitree) đã
+      # `export ROS_DOMAIN_ID=0`, nên `${ROS_DOMAIN_ID:-42}` lấy luôn số 0 đó
+      # — mặc định `:-` chỉ áp dụng khi biến CHƯA ĐẶT. Dùng tên riêng thì môi
+      # trường của robot không lọt vào được.
+      #
+      # Vì sao phải khác 0: trên domain 0 của mạng robot có node DDS khác phát
+      # gói discovery mà CycloneDDS 0.7 (bản của Foxy) phân tích sai trên
+      # aarch64 rồi SẬP. Đã xác minh bằng gdb:
+      #     Thread "dq.builtins" SIGSEGV
+      #     #2 ddsi_plist_init_frommsg ()  from libddsc.so.0
+      #     #4 builtins_dqueue_handler ()  from libddsc.so.0
+      # Đo được: domain 0 -> SIGSEGV ngay; domain 42 và 77 -> chạy bình thường.
+      # Nên đây không phải chuyện nhiễu lưu lượng, mà là lỗi làm chết node.
+      - ROS_DOMAIN_ID=${GO2_SLAM_DOMAIN_ID:-42}
       - ROS_LOCALHOST_ONLY=0
 
     volumes:
