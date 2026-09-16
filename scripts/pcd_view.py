@@ -20,13 +20,11 @@ CÁCH DÙNG
 """
 
 import argparse
-import re
 
 import numpy as np
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from sensor_msgs.msg import PointCloud2, PointField
+
+# ROS chỉ nạp trong main(): read_pcd và voxel_downsample là xử lý dữ liệu thuần,
+# và scripts/pcd_export.py dùng lại chúng mà không cần môi trường ROS.
 
 # PCD dùng tên kiểu riêng; ánh xạ sang dtype của numpy.
 _T = {('F', 4): 'f4', ('F', 8): 'f8', ('U', 1): 'u1', ('U', 2): 'u2',
@@ -78,6 +76,12 @@ def voxel_downsample(xyz, extra, voxel):
 
 
 def main():
+    import rclpy
+    from rclpy.node import Node
+    from rclpy.qos import (QoSProfile, DurabilityPolicy, ReliabilityPolicy,
+                           HistoryPolicy)
+    from sensor_msgs.msg import PointCloud2, PointField
+
     ap = argparse.ArgumentParser()
     ap.add_argument('--pcd', default='/ws/src/FAST_LIO/PCD/scans.pcd')
     ap.add_argument('--topic', default='/map_pcd')
