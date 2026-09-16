@@ -135,6 +135,23 @@ dds_uri() {
     # trong khối comment (sau <General>), thay nhầm sẽ làm hỏng tài liệu.
     sed "s|^\([[:space:]]*\)<NetworkInterfaceAddress>[^<]*</NetworkInterfaceAddress>|\1<NetworkInterfaceAddress>$iface</NetworkInterfaceAddress>|" \
         "$WS/docker/cyclonedds.xml" > "$WS/docker/cyclonedds.gen.xml"
+
+    # DDS_PEERS: danh sách IP cách nhau bởi dấu phẩy, dùng khi mạng CHẶN
+    # MULTICAST — hotspot điện thoại là ví dụ điển hình (đã đo: 0/20 gói
+    # multicast tới nơi). Không có nó thì discovery chết im lặng: ros2 topic
+    # list trống trơn, không một dòng lỗi.
+    #   DDS_PEERS=172.20.10.5,172.20.10.13 ./run.sh ...
+    if [ -n "${DDS_PEERS:-}" ]; then
+        local plist="" a
+        local IFS=,
+        for a in $DDS_PEERS; do
+            plist="$plist        <Peer address=\"$a\"/>\n"
+        done
+        unset IFS
+        sed -i -e "s|<AllowMulticast>[^<]*</AllowMulticast>|<AllowMulticast>false</AllowMulticast>|" \
+               -e "s|</Discovery>|      <Peers>\n$plist      </Peers>\n    </Discovery>|" \
+               "$WS/docker/cyclonedds.gen.xml"
+    fi
     echo "file:///ws/docker/cyclonedds.gen.xml"
 }
 
