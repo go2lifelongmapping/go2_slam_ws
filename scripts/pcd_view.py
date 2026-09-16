@@ -63,6 +63,42 @@ def read_pcd(path):
     return arr, n
 
 
+def read_ply(path):
+    """Đọc PLY nhị phân little-endian (định dạng pcd_export.py ghi ra)."""
+    _M = {'float': 'f4', 'float32': 'f4', 'double': 'f8', 'float64': 'f8',
+          'uchar': 'u1', 'uint8': 'u1', 'char': 'i1', 'int8': 'i1',
+          'ushort': 'u2', 'uint16': 'u2', 'short': 'i2', 'int16': 'i2',
+          'uint': 'u4', 'uint32': 'u4', 'int': 'i4', 'int32': 'i4'}
+    with open(path, 'rb') as f:
+        if f.readline().strip() != b'ply':
+            raise RuntimeError('không phải file PLY')
+        dt, n, fmt = [], 0, None
+        while True:
+            line = f.readline()
+            if not line:
+                raise RuntimeError('PLY hỏng: không thấy end_header')
+            w = line.decode('ascii', 'replace').split()
+            if not w:
+                continue
+            if w[0] == 'format':
+                fmt = w[1]
+            elif w[0] == 'element' and w[1] == 'vertex':
+                n = int(w[2])
+            elif w[0] == 'property' and w[1] != 'list':
+                dt.append((w[2], _M[w[1]]))
+            elif w[0] == 'end_header':
+                break
+        if fmt != 'binary_little_endian':
+            raise RuntimeError(f'chỉ đọc được binary_little_endian, file này là {fmt}')
+        arr = np.fromfile(f, dtype=np.dtype(dt), count=n)
+    return arr, n
+
+
+def read_cloud(path):
+    """Chọn bộ đọc theo đuôi file."""
+    return read_ply(path) if path.lower().endswith('.ply') else read_pcd(path)
+
+
 def voxel_downsample(xyz, extra, voxel):
     """Mỗi ô voxel giữ đúng một điểm. Rẻ hơn nhiều so với tính trọng tâm."""
     key = np.floor(xyz / voxel).astype(np.int64)
@@ -89,6 +125,8 @@ def main():
     ap.add_argument('--voxel', type=float, default=0.10, help='cạnh ô voxel, mét')
     ap.add_argument('--max-points', type=int, default=4_000_000,
                     help='nếu sau khi gộp vẫn nhiều hơn, tỉa thưa đều')
+    ap.add_argument('--zmin', type=float, default=None, help='bỏ điểm thấp hơn (cắt sàn)')
+    ap.add_argument('--zmax', type=float, default=None, help='bỏ điểm cao hơn (cắt trần)')
     args = ap.parse_args()
 
     rclpy.init()
@@ -96,16 +134,31 @@ def main():
     log = node.get_logger()
 
     log.info(f'đọc {args.pcd} ...')
-    arr, n = read_pcd(args.pcd)
+    arr, n = read_cloud(args.pcd)
     xyz = np.stack([arr['x'], arr['y'], arr['z']], axis=1).astype(np.float32)
-    inten = arr['intensity'].astype(np.float32) if 'intensity' in arr.dtype.names else None
+    names = arr.dtype.names
+    if 'intensity' in names:
+        inten = arr['intensity'].astype(np.float32)
+    elif 'red' in names:                      # PLY do pcd_export ghi: màu xám
+        inten = arr['red'].astype(np.float32)
+    else:
+        inten = None
 
     ok = np.isfinite(xyz).all(axis=1)
+    if args.zmin is not None:
+        ok &= xyz[:, 2] >= args.zmin
+    if args.zmax is not None:
+        ok &= xyz[:, 2] <= args.zmax
     xyz, inten = xyz[ok], (inten[ok] if inten is not None else None)
-    log.info(f'{n:,} điểm, bỏ {int((~ok).sum()):,} điểm không hợp lệ')
+    log.info(f'{n:,} điểm, bỏ {int((~ok).sum()):,} điểm (không hợp lệ hoặc ngoài khoảng z)')
 
-    xyz, inten = voxel_downsample(xyz, inten, args.voxel)
-    log.info(f'sau voxel {args.voxel} m: {len(xyz):,} điểm')
+    # voxel <= 0 nghĩa là KHÔNG gộp. Thiếu chặn này thì chia cho 0 và mọi điểm
+    # dồn hết về một ô — kết quả còn đúng 1 điểm, mà không báo lỗi gì.
+    if args.voxel > 0:
+        xyz, inten = voxel_downsample(xyz, inten, args.voxel)
+        log.info(f'sau voxel {args.voxel} m: {len(xyz):,} điểm')
+    else:
+        log.info('không gộp voxel')
 
     if len(xyz) > args.max_points:
         before = len(xyz)
