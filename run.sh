@@ -224,9 +224,18 @@ case "$CMD" in
         echo "Dùng: ./run.sh play <tên_bag>"; echo "Có sẵn:"; list_bags; exit 1
     fi
     if [ ! -f "bags/$NAME/metadata.yaml" ]; then
-        echo ">>> Không có bag 'bags/$NAME'." >&2
-        echo "    Có sẵn:" >&2; list_bags >&2
-        exit 1
+        # Bag nằm sâu trong thư mục con nên tên đầy đủ dài và dễ gõ thiếu.
+        # Nếu phần đuôi khớp DUY NHẤT một bag thì dùng luôn, khỏi bắt gõ lại.
+        MATCH="$(list_bags | grep -E "(^|/)$(printf '%s' "$NAME" | sed 's/[][\.*^$/]/\\&/g')$" || true)"
+        if [ "$(printf '%s\n' "$MATCH" | grep -c .)" = "1" ] && [ -n "$MATCH" ]; then
+            echo ">>> '$NAME' -> '$MATCH'"
+            NAME="$MATCH"
+        else
+            echo ">>> Không có bag 'bags/$NAME'." >&2
+            [ -n "$MATCH" ] && echo "    (khớp nhiều bag, phải ghi rõ hơn)" >&2
+            echo "    Có sẵn:" >&2; list_bags >&2
+            exit 1
+        fi
     fi
 
     # FAST-LIO và bag play PHẢI dùng chung một lựa chọn DDS. Lệch nhau thì mỗi
