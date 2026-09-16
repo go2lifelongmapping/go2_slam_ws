@@ -1,3 +1,17 @@
+# ============================================================================
+#  rviz cho XEM TỪ XA qua WiFi băng thông hẹp.
+#
+#  Khác go2_slam.rviz ở chỗ nó nghe /cloud_viz (do scripts/viz_bridge.py phát)
+#  thay vì /cloud_registered. Đo được:
+#      /cloud_registered   61.05 Mbit/s   528 KB/msg   14 572 diem
+#      /cloud_viz           0.10 Mbit/s   6.8 KB/msg      715 diem
+#  Hotspot điện thoại đo được 3 Mbit/s nên chỉ bản thưa mới qua được.
+#
+#  Decay Time 120 giây (cao hơn bản gốc) vì viz_bridge chỉ phát 2 Hz —
+#  phải tích luỹ lâu hơn mới thành hình bản đồ.
+#
+#  Điểm to hơn (3 px) cho dễ nhìn khi mật độ thưa.
+# ============================================================================
 Panels:
   - Class: rviz_common/Displays
     Name: Displays
@@ -13,10 +27,10 @@ Visualization Manager:
       Color: 80; 80; 80
       Reference Frame: camera_init
     - Class: rviz_default_plugins/PointCloud2
-      Name: Ban do (cloud_registered)
+      Name: Ban do (cloud_viz - da tia thua)
       Enabled: true
       Topic:
-        Value: /cloud_registered
+        Value: /cloud_viz
         Depth: 5
         # BEST EFFORT bắt buộc: FAST-LIO publish dữ liệu tần suất cao. Để
         # Reliable thì rviz KHÔNG nhận được gì và cũng không báo lỗi rõ ràng.
@@ -24,9 +38,9 @@ Visualization Manager:
         History Policy: Keep Last
         Durability Policy: Volatile
       Style: Points
-      Size (Pixels): 2
+      Size (Pixels): 3
       Alpha: 1
-      Decay Time: 60
+      Decay Time: 120
       # Ha tu 300 xuong 60: o 300 giay, 10 Hz x ~26k diem = ~15 trieu diem
       # giu trong RAM va ve lai moi khung hinh. rviz2 thoat giua chung vi qua tai.
       # Decay Time = số giây rviz GIỮ LẠI điểm cũ.
