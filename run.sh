@@ -245,9 +245,16 @@ case "$CMD" in
     # FAST-LIO phải sẵn sàng TRƯỚC khi bag chạy: nó không giữ lại scan đến
     # trước lúc subscribe xong, phát sớm là mất mấy giây đầu bag — đúng mấy
     # giây mà nó cần dữ liệu tĩnh để ước lượng trọng lực và bias IMU.
+    # FASTLIO_CONFIG: chọn config khác khi bag dùng tên topic khác. Bag ghi qua
+    # bridge go2_perception publish /go2/ouster/* chứ không phải /ouster/*, nên
+    # config mặc định sẽ không nhận được gì — và FAST-LIO im lặng, không báo lỗi.
+    #   FASTLIO_CONFIG=/ws/src/go2_slam/config/go2_bridge_ouster.yaml \
+    #     ./run.sh play GO2_KHUD_16-09/khuD_16-09_mau
+    CFG_ARG=""
+    [ -n "${FASTLIO_CONFIG:-}" ] && CFG_ARG="config_file:=$FASTLIO_CONFIG"
     docker compose exec -d -e CYCLONEDDS_URI="$DDS" slam bash -c \
       "source /opt/ros/foxy/setup.bash && source /ws/install/setup.bash && \
-       ros2 launch go2_slam fastlio.launch.py rviz:=$RVIZ > /tmp/fastlio.log 2>&1"
+       ros2 launch go2_slam fastlio.launch.py rviz:=$RVIZ $CFG_ARG > /tmp/fastlio.log 2>&1"
 
     echo ">>> Đợi FAST-LIO sẵn sàng..."
     for _ in $(seq 1 30); do

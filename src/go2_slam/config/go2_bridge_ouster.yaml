@@ -1,5 +1,6 @@
 # ============================================================================
-#  Config cho bag GO2_SANHD_16-09 / sanhD_16-09_lan2_d1
+#  Config cho các bag ghi qua bridge go2_perception (topic /go2/ouster/*).
+#  Dùng cho GO2_SANHD_16-09 và GO2_KHUD_16-09.
 #  Chép từ ouster_os1_32.yaml, chỉ đổi tên topic.
 #
 #  CẢNH BÁO: cloud trong bag này CHỈ CÓ x, y, z, intensity, ring (point_step 20).
