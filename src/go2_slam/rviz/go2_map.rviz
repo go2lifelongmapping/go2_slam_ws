@@ -1,0 +1,112 @@
+# ============================================================================
+#  rviz xem BAN DO DAY DU tu file scans.pcd (khong mat diem theo thoi gian).
+#
+#  Dung voi: python3 scripts/pcd_view.py
+#  Node do doc PCD, gop voxel, roi phat MOT message latched len /map_pcd.
+#  Khac han cach dung Decay Time: khong co diem nao het han, vi chi co dung
+#  mot message va no o lai mai.
+# ============================================================================
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Tree Height: 700
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 40
+      Color: 80; 80; 80
+      Reference Frame: camera_init
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Ban do day du (map_pcd)
+      Enabled: true
+      Topic:
+        Value: /map_pcd
+        Depth: 1
+        # RELIABLE + TRANSIENT_LOCAL de rviz mo sau van nhan duoc ban do
+        # da phat truoc do. Sai mot trong hai la khong thay gi.
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Durability Policy: Transient Local
+      Style: Points
+      Size (Pixels): 1
+      Alpha: 1
+      # Decay Time 0 = chi giu message moi nhat. Voi mot message latched chua
+      # TOAN BO ban do thi dung 0 la dung: khong co gi de het han.
+      Decay Time: 0
+      Color Transformer: AxisColor
+      Axis: Z
+      Autocompute Intensity Bounds: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Scan hien tai (body)
+      # Tat mac dinh: trung noi dung voi /cloud_registered, chi khac he toa do,
+      # nhung ton them ~58 Mbit/s khi xem qua mang.
+      Enabled: false
+      Topic:
+        Value: /cloud_registered_body
+        Depth: 5
+        Reliability Policy: Best Effort
+        History Policy: Keep Last
+        Durability Policy: Volatile
+      Style: Points
+      Size (Pixels): 3
+      Color: 255; 170; 0
+      Color Transformer: FlatColor
+      Decay Time: 0
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /Odometry
+        Depth: 20
+        Reliability Policy: Best Effort
+      Keep: 1
+      Shape:
+        Value: Axes
+        Axes Length: 0.5
+        Axes Radius: 0.05
+      Covariance:
+        Value: false
+    - Class: rviz_default_plugins/Path
+      Name: Quy dao
+      Enabled: true
+      Topic:
+        Value: /path
+        Depth: 5
+        Reliability Policy: Best Effort
+      Color: 0; 255; 127
+      Line Width: 0.03
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Show Names: true
+      Show Axes: true
+      Show Arrows: false
+      Marker Scale: 0.4
+      Frame Timeout: 15
+  Global Options:
+    # camera_init = khung thế giới của FAST-LIO, đặt tại vị trí khởi động
+    Fixed Frame: camera_init
+    Background Color: 25; 25; 30
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Distance: 25
+      Focal Point: {X: 0, Y: 0, Z: 0}
+      Pitch: 0.6
+      Yaw: 2.4
+      Target Frame: camera_init
+    Saved: ~
+Window Geometry:
+  Height: 1000
+  Width: 1600
