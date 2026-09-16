@@ -10,8 +10,8 @@
 #    - Moi khung hinh phai duyet so sach het han cua tung message.
 #    - Chi co nhung gi rviz nghe duoc: mo rviz muon la mat phan dau vinh vien.
 #
-#  Neu rviz dung hinh hoac thoat giua chung, do la ly do. Luc do dung
-#  go2_map.rviz + scripts/pcd_view.py thay the.
+#  Neu rviz dung hinh hoac thoat giua chung, do la ly do — ha Decay Time
+#  xuong, hoac dung go2_slam.rviz (Decay Time 60).
 # ============================================================================
 Panels:
   - Class: rviz_common/Displays
