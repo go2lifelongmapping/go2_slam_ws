@@ -317,8 +317,14 @@ case "$CMD" in
   stop)
     # Dừng cả rosbag: Ctrl-C ở cửa sổ ghi là cách đúng, nhưng lệnh này là
     # phương án dọn dẹp khi có tiến trình treo.
+    #
+    # PHẢI có "[b]ag play": dòng lệnh thật là `ros2 bag play ...`, KHÔNG chứa
+    # chuỗi "rosbag". Trước đây chỉ pkill "[r]osbag" nên bag play không bao giờ
+    # bị giết và tích lại sau mỗi lần chạy. Bảy bản sao cùng phát một bag vào
+    # cùng topic làm FAST-LIO nhận dữ liệu mâu thuẫn và PHÂN KỲ — vị trí nhảy
+    # lên hàng trăm triệu mét. Triệu chứng rất dễ đổ nhầm cho thuật toán.
     docker compose exec -T slam bash -c \
-      'pkill -f "[o]s_driver"; pkill -f "[f]astlio"; pkill -f "[r]viz2"; pkill -f "[s]tatic_transform"; pkill -f "[r]osbag"; pkill -f "[r]obot_state_publisher"; pkill -f "[j]oint_zeros"' \
+      'pkill -f "[o]s_driver"; pkill -f "[f]astlio"; pkill -f "[r]viz2"; pkill -f "[s]tatic_transform"; pkill -f "[r]obot_state_publisher"; pkill -f "[b]ag play"; pkill -f "[r]osbag"' \
       2>/dev/null || true
     echo ">>> Đã dừng các node ROS. Container vẫn chạy."
     ;;
