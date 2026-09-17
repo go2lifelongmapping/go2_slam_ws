@@ -13,7 +13,10 @@
 #
 #    ./scripts/lowstate_bridge.sh [iface] [rate_hz] [domain]
 # ============================================================================
-set -uo pipefail
+# KHÔNG dùng `set -u`: các script setup của ROS tham chiếu biến chưa đặt
+# (AMENT_TRACE_SETUP_FILES, COLCON_TRACE...) nên source chúng dưới `set -u` là
+# subshell chết ngay, và vế trái của pipe gãy với BrokenPipeError.
+set -o pipefail
 WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IFACE="${1:-eth0}"
 RATE="${2:-50}"
@@ -21,7 +24,8 @@ DOMAIN="${3:-42}"
 
 echo ">>> rt/lowstate ($IFACE, domain 0)  ->  /joint_states (domain $DOMAIN, ${RATE} Hz)"
 python3 "$WS/scripts/lowstate_reader.py" "$IFACE" "$RATE" \
-  | ( source /opt/ros/foxy/setup.bash
+  | ( set +u
+      source /opt/ros/foxy/setup.bash
       [ -f "$WS/install/setup.bash" ] && source "$WS/install/setup.bash"
       export ROS_DOMAIN_ID="$DOMAIN"
       export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

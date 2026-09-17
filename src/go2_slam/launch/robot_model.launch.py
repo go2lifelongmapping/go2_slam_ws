@@ -15,21 +15,24 @@ Cây TF vì thế nối liền:
                                                               v
                                             29 link của con chó (hip/thigh/calf/foot)
 
-KHỚP CHÂN ĐỨNG YÊN
-------------------
-12 khớp chân được đổi thành `fixed` trước khi nạp (xem _freeze_joints), nên
-toàn bộ TF của con chó là static và không cần /joint_states.
+KHỚP CHÂN: HAI CHẾ ĐỘ
+---------------------
+Mặc định (live_joints:=false): 12 khớp bị đổi thành `fixed` trước khi nạp, nên
+toàn bộ TF con chó là static, latched, không cần /joint_states và không bị bỏ
+đói khi DDS tải nặng. Chân đứng im ở góc 0.
 
-Chân vì thế đứng im ở tư thế góc 0. Muốn chân nhúc nhích đúng thì phải cầu nối
-`/lowstate` của Unitree sang sensor_msgs/JointState — Unitree phát nó trên DDS
-riêng của họ, không phải topic ROS trong domain này.
+live_joints:=true: giữ khớp là revolute và dùng /joint_states thật. Nguồn là
+scripts/lowstate_bridge.sh chạy TRÊN ROBOT, đọc rt/lowstate của Unitree ở
+domain 0 rồi phát sang domain của ta.
 
-Với mục đích xem SLAM thì tư thế chân không quan trọng: cái cần là biết thân
-robot đang ở đâu và quay hướng nào trong bản đồ.
+LƯU Ý ĐỒNG HỒ: chế độ live chỉ đúng khi đồng hồ robot và máy chạy rviz khớp
+nhau. Go2 mất đồng bộ NTP khi không có internet và có thể lùi hàng NĂM so với
+laptop — lúc đó TF không ghép được và chân sẽ không hiện.
 """
 
 import importlib.util
 import os
+import sys
 import xml.etree.ElementTree as ET
 
 from ament_index_python.packages import get_package_share_directory
@@ -80,7 +83,9 @@ def _freeze_joints(urdf_path):
 def generate_launch_description():
     urdf = os.path.join(get_package_share_directory('go2_description'),
                         'urdf', 'go2_description.urdf')
-    robot_desc = _freeze_joints(urdf)
+    # Xem DeclareLaunchArgument('live_joints') bên dưới.
+    live = 'live_joints:=true' in ' '.join(sys.argv)
+    robot_desc = open(urdf).read() if live else _freeze_joints(urdf)
 
     g = _load_go2_slam_launch()
     T_body_sensor = g.make_tf(g.quat_to_matrix(*g.BODY_TO_OS_SENSOR_QUAT),
@@ -93,6 +98,12 @@ def generate_launch_description():
         # bag). Chạy kèm go2_slam.launch.py thì file đó đã phát rồi — bật cả
         # hai là hai node cùng phát một transform, TF sẽ chập chờn.
         DeclareLaunchArgument('publish_base_tf', default_value='false'),
+
+        # live_joints:=true  -> giữ 12 khớp là revolute và dùng /joint_states
+        # thật. Cần scripts/lowstate_bridge.sh chạy TRÊN ROBOT để cấp nguồn.
+        # Mặc định false: đóng băng khớp thành fixed, TF thành static, không
+        # cần /joint_states và không bị bỏ đói khi DDS tải nặng.
+        DeclareLaunchArgument('live_joints', default_value='false'),
 
         Node(package='tf2_ros', executable='static_transform_publisher',
              name='tf_body_to_base_link_rm', output='log',
