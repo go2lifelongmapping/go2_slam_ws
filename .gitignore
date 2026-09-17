@@ -16,6 +16,7 @@ maps/
 # --- Repo của người khác (kéo về bằng scripts/fetch_src.sh) ---
 src/FAST_LIO/
 src/ouster-ros/
+src/go2_description/
 
 # --- Metadata sensor sinh ra lúc chạy ---
 *-metadata.json

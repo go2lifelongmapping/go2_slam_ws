@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-foxy-rosidl-default-generators \
       ros-foxy-pointcloud-to-laserscan \
       ros-foxy-rmw-cyclonedds-cpp \
+      ros-foxy-robot-state-publisher \
+      ros-foxy-joint-state-publisher \
+      ros-foxy-xacro \
     && rm -rf /var/lib/apt/lists/*
 
 # ---  user trùng UID/GID với host -----------------------------------
