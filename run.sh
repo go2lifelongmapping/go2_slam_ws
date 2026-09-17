@@ -155,6 +155,21 @@ dds_uri() {
     echo "file:///ws/docker/cyclonedds.gen.xml"
 }
 
+# --- Mô hình 3D của Go2 trong rviz ------------------------------------------
+# robot_state_publisher + joint_zeros.py, phát TF cho 29 link của con chó từ
+# base_link trở xuống. Chỉ có ý nghĩa khi có màn hình.
+#   $1 = true  -> tự phát cả static TF body->base_link (dùng khi phát lại bag,
+#                 vì fastlio.launch.py không phát nó; go2_slam.launch.py thì có)
+# Tắt hẳn bằng: ROBOT_MODEL=0 ./run.sh ...
+start_robot_model() {
+    [ "$RVIZ" = true ] || return 0
+    [ "${ROBOT_MODEL:-1}" = "0" ] && return 0
+    docker compose exec -d -e CYCLONEDDS_URI="${1:-}" slam bash -c \
+      "source /opt/ros/foxy/setup.bash && source /ws/install/setup.bash && \
+       ros2 launch go2_slam robot_model.launch.py publish_base_tf:=$2 \
+         > /tmp/robot_model.log 2>&1"
+}
+
 check_eno1() {
     # cyclonedds.xml ghim vào eno1. Card down thì Cyclone không bind được và
     # mọi node chết với: rcl node's rmw handle is invalid
@@ -173,6 +188,7 @@ case "$CMD" in
     IP="$(find_lidar)"
     echo ">>> Lidar: $IP"
     echo ">>> Chạy SLAM đầy đủ. Ctrl-C để dừng (bản đồ lưu vào src/FAST_LIO/PCD/)."
+    start_robot_model "$(dds_uri "$IP")" false
     in_container "$(dds_uri "$IP")" \
       "ros2 launch go2_slam go2_slam.launch.py sensor_hostname:=$IP rviz:=$RVIZ"
     ;;
@@ -265,6 +281,8 @@ case "$CMD" in
       "source /opt/ros/foxy/setup.bash && source /ws/install/setup.bash && \
        ros2 launch go2_slam fastlio.launch.py rviz:=$RVIZ $CFG_ARG > /tmp/fastlio.log 2>&1"
 
+    start_robot_model "$DDS" true
+
     echo ">>> Đợi FAST-LIO sẵn sàng..."
     for _ in $(seq 1 30); do
         sleep 1
@@ -300,7 +318,7 @@ case "$CMD" in
     # Dừng cả rosbag: Ctrl-C ở cửa sổ ghi là cách đúng, nhưng lệnh này là
     # phương án dọn dẹp khi có tiến trình treo.
     docker compose exec -T slam bash -c \
-      'pkill -f "[o]s_driver"; pkill -f "[f]astlio"; pkill -f "[r]viz2"; pkill -f "[s]tatic_transform"; pkill -f "[r]osbag"' \
+      'pkill -f "[o]s_driver"; pkill -f "[f]astlio"; pkill -f "[r]viz2"; pkill -f "[s]tatic_transform"; pkill -f "[r]osbag"; pkill -f "[r]obot_state_publisher"; pkill -f "[j]oint_zeros"' \
       2>/dev/null || true
     echo ">>> Đã dừng các node ROS. Container vẫn chạy."
     ;;
