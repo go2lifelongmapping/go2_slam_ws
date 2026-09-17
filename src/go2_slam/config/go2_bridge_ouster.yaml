@@ -102,16 +102,29 @@
             #  Sinh bằng: python3 scripts/ouster_extrinsic.py 192.168.123-metadata.json
             #
             #  Ý nghĩa: p_imu = extrinsic_R * p_lidar + extrinsic_T
-            #  R = diag(-1,-1,1) tức os_lidar xoay 180 độ quanh Z so với os_imu
-            #      — đặc điểm chung của mọi Ouster.
-            #  |T| = 32.26 mm
             #
-            #  KHÔNG chép sang máy Ouster khác: mỗi máy lệch nhau vài mm.
+            #  ĐỒNG NHẤT, KHÁC với ouster_os1_32.yaml — và đây là lý do:
+            #
+            #  Bag qua bridge go2_perception phát điểm VÀ imu đều ở hệ
+            #  `os_sensor` (đã kiểm chứng: header.frame_id của cả hai topic).
+            #  Bag ghi thẳng từ driver ouster_ros thì điểm ở `os_lidar`.
+            #
+            #  metadata của sensor cho biết:
+            #      os_lidar -> os_sensor : yaw 180 độ
+            #      os_imu   -> os_sensor : yaw 0 độ
+            #
+            #  Nên với bag từ DRIVER, diag(-1,-1,1) là đúng (đổi os_lidar sang
+            #  os_imu). Với bag qua BRIDGE thì hai bên đã cùng hệ os_sensor,
+            #  áp thêm 180 độ nữa là SAI 180 độ.
+            #
+            #  Triệu chứng khi để sai: mô hình robot trong rviz quay ngược
+            #  chiều đi. Đo trên bag khu D: 63% số đoạn có mũi robot lệch
+            #  150-180 độ so với vector vận tốc, chỉ 0,1% là cùng chiều.
             # ================================================================
-            extrinsic_T: [ 0.00244100, 0.00972500, 0.03066200 ]
-            extrinsic_R: [ -1.0,  0.0,  0.0,
-                            0.0, -1.0,  0.0,
-                            0.0,  0.0,  1.0 ]
+            extrinsic_T: [ 0.0, 0.0, 0.0 ]
+            extrinsic_R: [ 1.0,  0.0,  0.0,
+                           0.0,  1.0,  0.0,
+                           0.0,  0.0,  1.0 ]
 
         publish:
             # KHÔNG đặt map_en: true.
