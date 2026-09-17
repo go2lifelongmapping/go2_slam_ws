@@ -36,15 +36,7 @@ clone_or_update https://github.com/ouster-lidar/ouster-ros.git ros2-foxy ouster-
 # FAST-LIO2 (cây k-d tăng dần).
 clone_or_update https://github.com/hku-mars/FAST_LIO.git ROS2 FAST_LIO
 
-# --- 3. Mô hình robot Go2 ----------------------------------------------------
-# URDF + mesh .dae để hiện hình con chó trong rviz (display RobotModel).
-# Nhánh 'humble' nhưng URDF và mesh không phụ thuộc distro; gói chỉ
-# install(DIRECTORY ...) nên build trên Foxy bình thường.
-# Link gốc của URDF là 'base_link' — trùng đúng frame mà go2_slam.launch.py
-# đã phát static transform tới, nên ghép vào không cần thêm TF nào.
-clone_or_update https://github.com/Unitree-Go2-Robot/go2_description.git humble go2_description
-
-# --- 4. Áp patch cho FAST_LIO ------------------------------------------------
+# --- 3. Áp patch cho FAST_LIO ------------------------------------------------
 # 3 sửa đổi bắt buộc để chạy trên Foxy với Ouster. Xem patches/README.md.
 # Áp TẤT CẢ patch trong patches/ theo thứ tự tên, không chỉ 0001.
 for PATCH in "$WS"/patches/*.patch; do
