@@ -88,29 +88,26 @@ Lệch **14,5 cm theo x**. Đây là sai số hệ thống đi thẳng vào SLAM
 dùng extrinsic để đặt điểm vào hệ toạ độ thân. Không phải nguyên nhân chính của
 12 m drift, nhưng là nhiễu nên loại bỏ **trước** khi đo drift nghiêm túc.
 
-### 1.3 Sửa đồng hồ robot
-
-Đo được: robot lùi **821 ngày (2,25 năm)** so với laptop.
+### 1.3 ~~Sửa đồng hồ robot~~ — ĐÃ XONG (17/09/2026)
 
 ```
-laptop : 2026-09-17 11:05:59
-robot  : 2024-06-18 03:40:19
-System clock synchronized: no      systemd-timesyncd: inactive
+lech so voi laptop        : -0,106 s (phan lon la nhieu do, RTT SSH 220 ms)
+RTC time                  : 2026-09-17 05:03:37 UTC = 12:03 gio VN  ✔
+System clock synchronized : yes
+NTP service               : active
 ```
 
-Nguyên nhân: Go2 mất đồng bộ NTP khi không có internet, khởi động lại là lấy giờ
-từ RTC sai.
+RTC đã được ghi đúng nên giữ được qua khởi động lại. `date -s` chỉ đổi đồng hồ
+hệ thống; không ghi RTC (`hwclock -w`) thì reboot là mất.
 
-**Hệ quả nếu không sửa:** bag ghi bây giờ mang dấu thời gian 2024; TF xuyên máy
-không ghép được; `TIME_FROM_ROS_TIME` của driver Ouster đóng dấu sai.
+**Nếu tái diễn** (robot mất đồng bộ khi để lâu không mạng):
 
 ```bash
-ssh -t go2-eth "sudo date -s '@$(date +%s)' && date"
+ssh -t go2-eth "sudo date -s '@$(date +%s)' && sudo hwclock -w && date"
 ```
 
-Lâu dài: bật `systemd-timesyncd`, hoặc đồng bộ từ laptop mỗi lần nối cáp.
-
----
+Triệu chứng nhận biết: `timedatectl` báo `System clock synchronized: no`, và bag
+thu ra mang mốc thời gian lùi hàng năm.
 
 ## 2. Trước khi thu bag mới
 
