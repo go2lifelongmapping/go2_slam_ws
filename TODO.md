@@ -15,7 +15,7 @@ Mục tiêu dài hạn: **lifelong SLAM trên Unitree Go2**. Xem phần "Lộ tr
 | SLAM chạy phát lại bag trên laptop | ✔ |
 | Lưu bản đồ ra `scans.pcd` | ✔ (cần patch 0002) |
 | Xem từ xa qua WiFi hẹp | ✔ `viz_bridge.py`, 0,10 Mbit/s |
-| **Drift trên vòng khép kín** | **✘ 12,33 m / 181 m = 6,81%** |
+| **Drift trên vòng khép kín** | **✔ 0,11 m tại giây 334 = 0,07%** |
 | Loop closure | ✘ chưa có |
 | Bản đồ bền vững, định vị lại | ✘ chưa có |
 
@@ -23,32 +23,49 @@ Mục tiêu dài hạn: **lifelong SLAM trên Unitree Go2**. Xem phần "Lộ tr
 
 ## 1. Việc cần làm ngay
 
-### 1.1 Tách bạch nguyên nhân drift — chạy FAST-LIO trên L1
+### 1.1 ~~Tách bạch nguyên nhân drift~~ — ĐÃ GIẢI QUYẾT, KHÔNG CÒN VẤN ĐỀ
 
-**Vì sao:** drift 12,33 m trên vòng 181 m là vấn đề lớn nhất hiện nay. Nghi phạm
-chính là cloud Ouster trong bag **thiếu trường `time` per-point**, nên FAST-LIO
-không khử méo chuyển động được. PCL báo thẳng khi chạy:
+**Kết luận: FAST-LIO chạy rất tốt trên bag này. Không có vấn đề drift.**
 
 ```
-Failed to find match for field 't'.
+tại giây 334 (điểm khép vòng thật)
+  quãng đường đã đi   : 167,4 m
+  cách điểm xuất phát : 0,11 m
+  drift tương đối     : 0,07%
 ```
 
-Bag khu D có sẵn **cả hai lidar, chung một đồng hồ**, nên so sánh được trực tiếp:
+FAST-LIO tự tìm điểm gần xuất phát nhất cũng ra đúng giây 334, cách 0,09 m —
+khớp với điểm khép vòng mà README của bag nêu.
 
-```
-/go2/ouster/points : 29 405 điểm/khung, 20 byte, KHÔNG có time
-/utlidar/cloud     :  3 939 điểm/khung, 32 byte, CÓ time (đơn vị GIÂY)
-```
+So sánh: leg odometry của robot trôi 0,26 m / 126,9 m = 0,21%. **FAST-LIO chính
+xác hơn gấp ba.**
 
-**Làm gì:** tạo config mới trỏ vào `/utlidar/cloud` + `/utlidar/imu`, đặt
-`timestamp_unit: 0` (giây), rồi chạy và đo lại drift bằng cách so vị trí đầu–cuối.
+#### Vì sao trước đó tưởng là 12,33 m
 
-**Kết quả quyết định điều gì:**
-- Drift tụt xuống dưới 1–2% → nguyên nhân là thiếu `time`. Cách sửa: ghi bag
-  thẳng từ driver Ouster, đừng qua bridge (xem 2.1).
-- Drift vẫn ~6% → nguyên nhân nằm chỗ khác, và ta đã loại trừ được một khả năng lớn.
+Lấy **điểm cuối bag** làm điểm khép vòng. Sai: robot khép vòng ở giây 334 rồi
+**đi thêm 10,4 m trong 37 giây** mới dừng record. README của bag nói rõ điều này
+ở phần "Odometry của bag này RẤT chính xác", nhưng đã bị đọc sót.
 
-**Không tốn phần cứng, không tốn mạng. Dữ liệu đã nằm sẵn trong bag.**
+**Bài học:** trước khi gọi một khoảng cách là "drift", phải xác minh hai điểm so
+sánh thật sự là cùng một chỗ. Với bag đi nhiều hơn một vòng, tìm điểm quỹ đạo
+**quay lại gần điểm xuất phát nhất**, đừng lấy điểm cuối.
+
+#### Trường `time` per-point: không còn là ưu tiên
+
+Cloud Ouster qua bridge thiếu trường `t` nên FAST-LIO không khử méo chuyển động.
+Điều này vẫn **đúng về mặt kỹ thuật**, nhưng với drift 0,07% thì nó rõ ràng không
+gây hại đáng kể ở tốc độ đi bộ 0,58 m/s. Ghi bag thẳng từ driver vẫn tốt hơn
+(xem 2.1), nhưng không còn là việc gấp.
+
+#### Đừng thử FAST-LIO trên L1
+
+README của bag đã thử và thất bại: `blind` 0,35 / 0,47 và `scan_line` 1 / 2, cả
+ba đều `No Effective Points`, không ra map. L1 chỉ 4.011 điểm/khung với range p50
+0,45 m — quá thưa và quá gần cho FAST-LIO.
+
+Ngoài ra `header.stamp` của L1 lệch **−239,5 giây** so với giờ ghi bag, ngay
+trong cùng một bag. Ghép L1 với Ouster phải dùng **bus time**, không dùng
+`header.stamp`.
 
 ### 1.2 Sửa vị trí lidar theo hiệu chuẩn thật
 
@@ -134,15 +151,21 @@ Thứ tự phụ thuộc, mỗi giai đoạn có điều kiện kết thúc đo 
 đã đạt. Nhưng nó qua bridge nên thiếu `time`; nên thu lại một bag tương đương
 bằng `./run.sh rec`.
 
-**GĐ 2 — thước đo drift.** Đang dở. Đã đo thủ công được 12,33 m / 181 m; cần viết
-thành script trong `scripts/` để chạy lặp lại và so sánh giữa các lần chỉnh.
+**GĐ 2 — thước đo drift.** Đang dở. Đã đo được **0,11 m / 167,4 m = 0,07%** trên
+bag khu D. Cần viết thành script trong `scripts/` để chạy lặp lại.
+*Script phải tự tìm điểm quay lại gần điểm xuất phát nhất*, đừng lấy điểm cuối —
+đó chính là chỗ đã đo nhầm ra 12,33 m.
 *Xong khi:* một lệnh, đầu vào là bag, đầu ra là drift tính bằng mét.
 
 **GĐ 3 — loop closure + pose graph.** Khoảng cách lớn nhất. Giữ FAST-LIO làm
 odometry, thêm node Scan Context + GTSAM. Ứng viên: `FAST_LIO_SLAM_ros2` (khai
 báo chạy từ Foxy, phụ thuộc `livox_ros_driver2` đã có sẵn).
-*Xong khi:* drift của GĐ 2 giảm ít nhất một bậc độ lớn sau khi khép vòng.
-**Đừng bắt đầu khi drift còn 6,8%** — quá lớn để pose graph gánh.
+*Xong khi:* bản đồ sau nhiều vòng không còn tường nhân đôi, và định vị lại được
+trong bản đồ cũ.
+
+**Lưu ý:** với drift 0,07% trên một vòng, loop closure KHÔNG còn là để sửa sai số
+ngắn hạn — nó cần cho việc **chạy dài và đa phiên**, nơi sai số tích luỹ qua hàng
+giờ, và cho **định vị lại** ở GĐ 4.
 
 **GĐ 4 — bản đồ nạp lại được + định vị lại.** Lưu pose graph + keyframe +
 descriptor, không phải chỉ `scans.pcd`. Thêm chế độ chỉ định vị.
