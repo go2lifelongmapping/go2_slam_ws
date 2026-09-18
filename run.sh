@@ -67,11 +67,18 @@ find_lidar() {
     local ip
     ip=$(timeout 8 avahi-browse -rtp _ouster-lidar._tcp 2>/dev/null \
          | awk -F';' '$1=="=" && $3=="IPv4" {print $8; exit}')
+    # Dự phòng khi mDNS hỏng: thử thẳng địa chỉ cố định trên mạng nội bộ Go2.
+    # Cần thiết vì robot có thể không cài avahi-utils, và vì mDNS hay chập chờn
+    # — kẹt giữa buổi thu dữ liệu ngoài hiện trường thì rất phiền.
+    if [ -z "$ip" ] && timeout 2 ping -c1 -W1 192.168.123.40 >/dev/null 2>&1; then
+        echo ">>> mDNS không ra, nhưng 192.168.123.40 có trả lời — dùng địa chỉ đó." >&2
+        ip=192.168.123.40
+    fi
     if [ -z "$ip" ]; then
-        echo ">>> KHÔNG dò được lidar qua mDNS." >&2
-        echo "    Kiểm tra: cáp đã cắm chưa (cat /sys/class/net/eno1/carrier)," >&2
-        echo "    lidar đã cấp nguồn 24V chưa." >&2
-        echo "    Hoặc chỉ định tay:  LIDAR_IP=x.x.x.x ./run.sh" >&2
+        echo ">>> KHÔNG dò được lidar." >&2
+        echo "    Kiểm tra cáp: cat /sys/class/net/<card>/carrier  (laptop: eno1, Go2: eth0)" >&2
+        echo "    Kiểm tra lidar đã cấp nguồn 24V chưa." >&2
+        echo "    Hoặc chỉ định tay:  LIDAR_IP=x.x.x.x ./run.sh ..." >&2
         exit 1
     fi
     echo "$ip"
