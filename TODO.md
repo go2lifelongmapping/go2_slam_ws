@@ -67,26 +67,42 @@ Ngoài ra `header.stamp` của L1 lệch **−239,5 giây** so với giờ ghi b
 trong cùng một bag. Ghép L1 với Ouster phải dùng **bus time**, không dùng
 `header.stamp`.
 
-### 1.2 Sửa vị trí lidar theo hiệu chuẩn thật
-
-`go2_slam.launch.py` đang dùng số **ước lượng bằng mắt**:
+### 1.2 ~~Sửa vị trí lidar~~ — ĐÃ XONG (18/09/2026)
 
 ```python
-MOUNT_XYZ = (0.10, 0.0, 0.15)      # mét
-MOUNT_RPY = (0.0, 0.0, 0.0)        # radian
+# truoc: uoc luong bang mat
+MOUNT_XYZ = (0.10,    0.0,      0.15)
+MOUNT_RPY = (0.0,     0.0,      0.0)
+
+# sau: hieu chuan that, lidar_calibrate 16/09, rmse 1,2 cm
+MOUNT_XYZ = (0.24525, -0.03882, 0.10411)
+MOUNT_RPY = (-0.01246, 0.02703, 0.03784)
 ```
 
-README của bag `GO2_KHUD_16-09` có số **hiệu chuẩn thật** từ `lidar_calibrate`
-trên robot, rmse 1,2 cm, overlap 0,63:
+Static TF `body → base_link` đổi từ `-0.0976 +0.0097 -0.1575` thành
+`-0.2383 +0.0592 -0.1176` m.
+
+#### ⚠️ Việc này KHÔNG cải thiện drift — đừng kỳ vọng nhầm
+
+`MOUNT_XYZ` / `MOUNT_RPY` chỉ đi vào **một** chỗ:
 
 ```
-x: 0.24525   y: -0.03882   z: 0.10411
-roll: -0.01246   pitch: 0.02703   yaw: 0.03784
+MOUNT_*  →  T_base_sensor  →  T_body_base  →  static TF 'body' → 'base_link'
 ```
 
-Lệch **14,5 cm theo x**. Đây là sai số hệ thống đi thẳng vào SLAM, vì FAST-LIO
-dùng extrinsic để đặt điểm vào hệ toạ độ thân. Không phải nguyên nhân chính của
-12 m drift, nhưng là nhiễu nên loại bỏ **trước** khi đo drift nghiêm túc.
+**Không** được truyền vào FAST-LIO. FAST-LIO lấy extrinsic từ `extrinsic_T` /
+`extrinsic_R` trong YAML — đó là phép biến đổi **lidar → IMU**, đọc từ metadata
+của chính con sensor, và vốn đã đúng.
+
+Chú thích sẵn trong `go2_slam.launch.py` đã nói rõ từ đầu: *"Sai số 1-2 cm ở
+TỊNH TIẾN không ảnh hưởng chất lượng bản đồ (SLAM chỉ dùng LiDAR+IMU); nó chỉ
+ảnh hưởng khi chiếu bản đồ về hệ chân robot để điều hướng."*
+
+**Sửa nó để làm gì:** để `base_link` nằm đúng chỗ khi bạn chiếu bản đồ về hệ chân
+robot — tức khi tích hợp điều hướng, đặt mô hình robot, hay tính chiều cao vật
+cản so với bàn chân. Không phải để bản đồ đẹp hơn.
+
+**Phải hiệu chuẩn lại** nếu tháo lắp lidar, đổi đế, hay vặn lại ốc.
 
 ### 1.3 ~~Sửa đồng hồ robot~~ — ĐÃ XONG (17/09/2026)
 

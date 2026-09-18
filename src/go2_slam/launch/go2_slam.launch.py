@@ -48,8 +48,17 @@ BODY_TO_OS_SENSOR_QUAT = (0.0, 0.0, 0.0, 1.0)          # x, y, z, w
 # Sai số 1-2 cm ở TỊNH TIẾN không ảnh hưởng chất lượng bản đồ (SLAM chỉ dùng
 # LiDAR+IMU); nó chỉ ảnh hưởng khi chiếu bản đồ về hệ chân robot để điều hướng.
 # Ngược lại GÓC XOAY phải đúng — lệch 5 độ là mặt sàn trong bản đồ bị nghiêng.
-MOUNT_XYZ = (0.10, 0.0, 0.15)      # mét
-MOUNT_RPY = (0.0, 0.0, 0.0)        # radian: roll, pitch, yaw
+#
+# GIÁ TRỊ DƯỚI ĐÂY LÀ HIỆU CHUẨN THẬT, không phải ước lượng.
+# Nguồn: `lidar_calibrate` chạy trên robot 16/09/2026, rmse 1,2 cm, overlap 0,63.
+# Chép từ README của bag GO2_KHUD_16-09.
+# Thay cho ước lượng bằng mắt cũ (0.10, 0.0, 0.15) — lệch 14,5 cm theo x, vì
+# lidar thực tế ngồi hẳn về phía trước trên vùng vai chứ không phải giữa lưng.
+#
+# PHẢI HIỆU CHUẨN LẠI nếu tháo lắp lidar, đổi đế, hay chỉ vặn lại ốc: đây là
+# tư thế vật lý, không phải hằng số của thiết bị.
+MOUNT_XYZ = (0.24525, -0.03882, 0.10411)     # mét
+MOUNT_RPY = (-0.01246, 0.02703, 0.03784)     # radian: roll, pitch, yaw
 
 # ============================================================================
 
