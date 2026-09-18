@@ -171,8 +171,12 @@ bag khu D. Cần viết thành script trong `scripts/` để chạy lặp lại.
 *Xong khi:* một lệnh, đầu vào là bag, đầu ra là drift tính bằng mét.
 
 **GĐ 3 — loop closure + pose graph.** Khoảng cách lớn nhất. Giữ FAST-LIO làm
-odometry, thêm node Scan Context + GTSAM. Ứng viên: `FAST_LIO_SLAM_ros2` (khai
-báo chạy từ Foxy, phụ thuộc `livox_ros_driver2` đã có sẵn).
+odometry, thêm node Scan Context + GTSAM. Ứng viên: `FAST_LIO_SLAM_ros2` — khai
+báo "ROS ≥ Foxy" nên **chạy được trên Foxy, KHÔNG cần đổi distro trước**.
+Phụ thuộc `livox_ros_driver2` đã có sẵn trong `src/`.
+
+Làm trên Foxy trước; chỉ chuyển Humble khi gặp rào cản thật, lúc đó sẽ có lý do
+cụ thể thay vì phỏng đoán.
 *Xong khi:* bản đồ sau nhiều vòng không còn tường nhân đôi, và định vị lại được
 trong bản đồ cũ.
 
@@ -196,10 +200,20 @@ tuyến tính theo thời gian.
 
 ## 4. Quyết định còn treo
 
-**Foxy hay Humble.** Foxy hết vòng đời từ 5/2023; phần lớn công cụ lifelong SLAM
-nhắm Humble trở lên. Docker đã tách distro khỏi OS của robot — chính nó cho phép
-chạy Humble ngay trên Jetson. Chi phí đổi trả một lần ở GĐ 3; chi phí ở lại trả
-dần suốt GĐ 4 và 5.
+**Foxy hay Humble.** KHÔNG phải điều kiện tiên quyết cho GĐ 3 —
+`FAST_LIO_SLAM_ros2` khai báo chạy từ Foxy. Đây là đánh đổi rủi ro, không phải
+rào cản.
+
+*Chi phí ở lại Foxy, đã trả trong thực tế:* hai lỗi CycloneDDS 0.7 gặp trong
+2 ngày (domain 0 sập SIGSEGV; topic TRANSIENT_LOCAL không tới được subscriber),
+cả hai đã sửa ở bản sau. Và `patches/0001` tồn tại CHỈ vì Foxy cũ — README của
+nó ghi rõ `Trigger::Request::ConstSharedPtr` "mới có từ Humble". `ouster-ros`
+cũng phải dùng nhánh `ros2-foxy` vì nhánh chính đòi Humble+.
+
+*Chi phí đổi:* build lại image hai máy, dựng lại toàn bộ src/, kiểm chứng lại
+mọi số đã đo. Một hai ngày, cộng rủi ro gặp lỗi mới ở chỗ đang ổn.
+
+*Đề nghị:* làm GĐ 3 trên Foxy trước. Chuyển khi có lý do cụ thể.
 
 **Camera RGB.** Robot đã có sẵn RealSense D435i (`librealsense2 2.54`,
 `pyrealsense2` đã cài). Tô màu point cloud **không sửa được drift** và còn che
