@@ -12,6 +12,7 @@ import os
 import socket
 import struct
 import sys
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -32,7 +33,7 @@ def quat_to_yaw(q):
 
 class PPNode(Node):
 
-    def __init__(self, route, dry_run=False, **kw):
+    def __init__(self, route, dry_run=False, log_path=None, **kw):
         super().__init__("pure_pursuit_node")
         self.pp = PurePursuit(route, **kw)
         self.dry_run = dry_run
@@ -40,6 +41,12 @@ class PPNode(Node):
         self.stopped = False
         self.last_xy = None
         self.n = 0
+        # mat_pre.txt cua FAST-LIO bi GHI DE moi lan no khoi dong lai, nen
+        # ghi quy dao o day de khong mat du lieu sau moi lan thu.
+        self.log = open(log_path, "w") if log_path else None
+        if self.log:
+            self.log.write("t,x,y,yaw,alpha,vx,vyaw,i\n")
+        self.t0 = time.time()
         self.create_subscription(Odometry, "/Odometry", self.on_odom, 10)
         self.get_logger().info(
             "bám %d waypoint | chế độ %s | gửi UDP %d"
@@ -76,6 +83,12 @@ class PPNode(Node):
         if not self.dry_run:
             self.sock.sendto(struct.pack("<ddd", vx, 0.0, vyaw), UDP_ADDR)
 
+        if self.log:
+            self.log.write("%.3f,%.4f,%.4f,%.5f,%.5f,%.3f,%.3f,%d\n"
+                           % (time.time() - self.t0, x, y, yaw,
+                              info["alpha"], vx, vyaw, info["i"]))
+            self.log.flush()
+
         self.n += 1
         if self.n % 10 == 0:
             self.get_logger().info(
@@ -93,12 +106,13 @@ def main():
     ap.add_argument("--v-nom", type=float, default=0.20)
     ap.add_argument("--k-ang", type=float, default=1.5)
     ap.add_argument("--turn-in-place", type=float, default=0.7)
+    ap.add_argument("--log", help="ghi quy dao ra CSV de phan tich sau")
     args = ap.parse_args()
 
     route = load_route(args.route)
 
     rclpy.init()
-    node = PPNode(route, dry_run=args.dry_run,
+    node = PPNode(route, dry_run=args.dry_run, log_path=args.log,
                   lookahead=args.lookahead, v_nom=args.v_nom,
                   k_ang=args.k_ang, turn_in_place=args.turn_in_place)
     try:
@@ -106,6 +120,9 @@ def main():
     except KeyboardInterrupt:
         node.get_logger().info("Ctrl+C — ngừng gửi")
     finally:
+        if node.log:
+            node.log.close()
+            print("da ghi %s" % args.log)
         node.destroy_node()
         rclpy.shutdown()
 
