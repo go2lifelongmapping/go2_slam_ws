@@ -61,6 +61,14 @@ try:
 
         if fresh:
             if sport:
+                if stopped:
+                    # StopMove dua robot ve mode 0 -> khong nhan Move nua.
+                    # Move dung _CallNoReply nen KHONG bao loi: robot dung im
+                    # ma log van in Move(...) nhu dang chay binh thuong.
+                    # Chi goi mot lan moi dot, khong lap o 20 Hz.
+                    sport.BalanceStand()
+                    time.sleep(0.1)
+                    print("  BalanceStand -> san sang nhan lenh")
                 sport.Move(vx, vy, vyaw)
             stopped = False
             n += 1
