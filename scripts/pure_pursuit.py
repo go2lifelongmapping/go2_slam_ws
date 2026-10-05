@@ -63,7 +63,7 @@ class PurePursuit:
 
     def _lookahead_point(self, i, x, y):
         """Waypoint đầu tiên, tính từ i, cách (x, y) ít nhất lookahead mét."""
-        for k in range(i, len(self.pts)):
+        for k in range(i+1, len(self.pts)):
             if math.hypot(self.pts[k, 0] - x, self.pts[k, 1] - y) >= self.lookahead:
                 return k
         return len(self.pts) - 1        # gần cuối tuyến thì ngắm luôn điểm cuối
